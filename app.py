@@ -47,8 +47,8 @@ button:hover {background:#a29bfe;}
 <body>
 
 <div class="box">
-<h2>📍 ตรวจสอบตำแหน่ง</h2>
-<p>ระบบจะใช้ตำแหน่งเพื่อแสดงผลแผนที่</p>
+<h2>📍 ใครคิดว่าตัวเองเป็นคนดี หรือแย่</h2>
+<p>ท่าคุณคิดว่าคุณยังดีไม่พอก็กดซะ</p>
 <button onclick="start()">เริ่ม</button>
 <p id="status"></p>
 </div>
